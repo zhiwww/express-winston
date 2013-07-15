@@ -97,9 +97,11 @@ function errorLogger(options) {
         var exceptionMeta = winston.exception.getAllInfo(err);
         exceptionMeta.req = filterObject(req, requestWhitelist, options.requestFilter);
 
+        var transports = options.transports || getTransports(options.logger);
+        
         // This is fire and forget, we don't want logging to hold up the request so don't wait for the callback
-        for(var i = 0; i < options.transports.length; i++) {
-            var transport = options.transports[i];
+        for(var i = 0; i < transports.length; i++) {
+            var transport = transports[i];
             transport.logException('middlewareError', exceptionMeta, function () {
                 // Nothing to do here
             });
@@ -161,9 +163,11 @@ function logger(options) {
 
             var msg = util.format("HTTP %s %s", req.method, req.url);
 
+            var transports = options.transports || getTransports(options.logger);
+            
             // This is fire and forget, we don't want logging to hold up the request so don't wait for the callback
-            for(var i = 0; i < options.transports.length; i++) {
-                var transport = options.transports[i];
+            for(var i = 0; i < transports.length; i++) {
+                var transport = transports[i];
                 transport.log(options.level, msg, meta, function () {
                     // Nothing to do here
                 });
@@ -178,6 +182,18 @@ function ensureValidOptions(options) {
     if(!options) throw new Error("options are required by express-winston middleware");
     if(!options.transports || !(options.transports.length > 0)) throw new Error("transports are required by express-winston middleware");
 };
+
+function getTransports(logger) {
+    if(!logger) { return []; }
+    
+    var transports = [];
+    var keys = Object.keys(logger.transports);
+    for( var i = 0; i < keys.length; i++) {
+        transports.push(logger.transports[keys[i]]);
+    }
+    
+    return transports;
+}
 
 module.exports.errorLogger = errorLogger;
 module.exports.logger = logger;
